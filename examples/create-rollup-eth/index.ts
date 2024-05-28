@@ -1,6 +1,6 @@
 import { createPublicClient, http } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { arbitrumSepolia } from 'viem/chains';
+import { arbitrumSepolia, holesky } from 'viem/chains';
 import { createRollupPrepareConfig, prepareChainConfig, createRollup } from '@arbitrum/orbit-sdk';
 import { sanitizePrivateKey, generateChainId } from '@arbitrum/orbit-sdk/utils';
 import { config } from 'dotenv';
@@ -28,7 +28,7 @@ const validatorPrivateKey = withFallbackPrivateKey(process.env.VALIDATOR_PRIVATE
 const validator = privateKeyToAccount(validatorPrivateKey).address;
 
 // set the parent chain and create a public client for it
-const parentChain = arbitrumSepolia;
+const parentChain = holesky;
 const parentChainPublicClient = createPublicClient({ chain: parentChain, transport: http() });
 
 // load the deployer account
@@ -95,6 +95,20 @@ async function main() {
     await writeFile(
       'orbitSetupScriptConfig.json',
       JSON.stringify({ ...obj, ...coreContracts, utils: coreContracts.validatorUtils }, null, 2),
+    );
+    await writeFile(
+      '../prepare-node-config/envConfig.json',
+      JSON.stringify(
+        {
+          chainName: obj.chainName,
+          orbitDeployHash: transactionReceipt.transactionHash,
+          batchPosterPrivateKey,
+          validatorPrivateKey,
+          wasmModuleRoot: createRollupConfig.wasmModuleRoot,
+        },
+        null,
+        2,
+      ),
     );
   } catch (error) {
     console.error(`Rollup creation failed with error: ${error}`);
